@@ -27,4 +27,4 @@ O **Aquila-X** é uma frota de drones equipados com IA e sensores avançados par
 
 ## 🏗️ Estrutura do Projeto
 - `/docs`: Diagramas UML (Atividades, Classes, Sequência).
-- `/src`: Código fonte Java do sistema e simulação dos drones.
+- `/falcao-sombrio/falcao-sombrio`: Código fonte Java do sistema e simulação dos drones.
