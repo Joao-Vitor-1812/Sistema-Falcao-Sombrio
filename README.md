@@ -16,8 +16,8 @@ O **Aquila-X** é uma frota de drones equipados com IA e sensores avançados par
 ### Sprint 1: Modelagem e Arquitetura
 - ✅ **ETAPA 1:** Proposta de Projeto e Repositório (04/03)
 - ✅ **ETAPA 2:** Diagrama de Classes inicial (11/03)
-- 🔄 **ETAPA 3:** Diagrama de Sequência inicial (18/03)
-- 🔄 **ETAPA 4:** Integração de modelos (Classes + Banco de Dados) (25/03)
+- ✅ **ETAPA 3:** Diagrama de Sequência inicial (18/03)
+- ✅ **ETAPA 4:** Integração de modelos (Classes + Banco de Dados) (25/03)
 
 ### Sprint 2: Desenvolvimento e Entrega
 - 🔄 **ETAPA 5:** Diagrama de Projeto (Abstrações e Interfaces) (29/04)
