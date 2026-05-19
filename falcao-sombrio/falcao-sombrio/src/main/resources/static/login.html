@@ -68,9 +68,16 @@
 
         #error-msg { color: #ff4444; font-size: 0.8rem; margin-top: 15px; display: none; }
     </style>
-</head>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falcão Sombrio GCS - Autenticação</title>
+    </head>
 <body>
-    <form class="login-card" action="/login" method="POST" onsubmit="gravarSessaoTemporaria()">
+
+    <form class="login-card" action="/login" method="POST" id="loginForm">
         <h1>FALCÃO SOMBRIO GCS</h1>
         <p>AUTENTICAÇÃO MILITAR REQUERIDA</p>
         
@@ -85,28 +92,30 @@
         
         <button type="submit" class="btn-login">EFETUAR LOGIN</button>
         
-        <p id="error-msg">Acesso Negado: Credenciais ou Certificado Inválidos.</p>
+        <p id="error-msg" style="display: none; color: #ff4d4d; font-size: 0.8rem; margin-top: 15px;">
+            Acesso Negado: Credenciais ou Certificado Inválidos.
+        </p>
         
         <p style="font-size: 0.6rem; margin-top: 40px; color: #666;">Securus Dynamics &copy; 2026</p>
     </form>
 
     <script>
-        // Pequena lógica de apoio para manter o comportamento visual de erro e sessão
-        
-        // 1. Se o Spring Security rejeitar a senha, ele volta com "?error" na URL. Ligamos o seu erro-msg!
+        // Se a URL contiver '?error', exibe a mensagem de credenciais inválidas do Spring Security
         if (window.location.search.includes("error")) {
             document.getElementById('error-msg').style.display = 'block';
         }
 
-        // 2. Alimenta o sessionStorage apenas para a sua tela principal continuar exibindo quem logou
+        // Se a URL contiver '?logout', limpa os dados salvos localmente
         if (window.location.search.includes("logout")) {
             sessionStorage.clear();
         }
 
-        function gravarSessaoTemporaria() {
+        // Ao enviar o formulário, grava quem tentou o login apenas para exibição inicial de interface
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
             const id = document.getElementById('user-id').value;
             sessionStorage.setItem('operadorLogado', id);
-        }
+        });
     </script>
+
 </body>
 </html>

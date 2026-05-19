@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface OperadorRepository extends JpaRepository<Operador, Integer> {
-    // Este método faz o Spring criar automaticamente a query: 
-    // SELECT * FROM operador WHERE login = ?
+    
+    // Método JPA que faz a busca automática baseada na String da coluna 'login'
     Optional<Operador> findByLogin(String login);
 }

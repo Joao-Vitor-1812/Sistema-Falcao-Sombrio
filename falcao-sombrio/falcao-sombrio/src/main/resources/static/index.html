@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Securus Dynamics - Falcão Sombrio GCS</title>
+    <title>Securus Dynamics - Aquila-X</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -16,17 +16,14 @@
 
         body { background-color: var(--bg-color); color: var(--text-color); font-family: var(--font-mono); margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
 
-        /* Header Militar */
         header { background: linear-gradient(90deg, #111, #222); padding: 10px 20px; border-bottom: 2px solid var(--accent-color); display: flex; justify-content: space-between; align-items: center; }
         .status-tag { color: var(--accent-color); font-size: 0.8rem; text-transform: uppercase; }
 
-        /* Layout Principal */
         main { display: grid; grid-template-columns: 350px 1fr 300px; flex-grow: 1; gap: 5px; padding: 5px; }
         .panel { background-color: var(--panel-color); border: 1px solid #333; padding: 15px; display: flex; flex-direction: column; }
         
         h2 { font-size: 0.9rem; border-bottom: 1px solid #444; padding-bottom: 5px; margin-top: 0; color: var(--accent-color); text-transform: uppercase; }
 
-        /* Terminais e Controles */
         #log-console { background: #000; font-size: 0.75rem; color: #aaa; padding: 10px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; }
         .log-json { color: var(--accent-color); }
         .telemetry-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; }
@@ -40,14 +37,11 @@
         button.cmd-btn:hover { background-color: #222; }
         button.cmd-btn:active { background-color: var(--accent-color); color: #000; }
 
-        /* Botão de Evasão */
         .btn-evasao { background-color: transparent; border: 1px solid var(--alert-color); color: var(--alert-color); padding: 10px; cursor: pointer; text-transform: uppercase; font-weight: bold; transition: all 0.3s; margin-top: auto; }
         .btn-evasao:hover { background-color: var(--alert-color); color: #000; }
 
-        /* Mapa */
         #map { height: 100%; width: 100%; border: 1px solid #333; cursor: crosshair; }
 
-        /* Overlay de Status da Missão */
         #mission-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999;
             display: none; justify-content: center; align-items: center; text-align: center;
@@ -58,6 +52,11 @@
         #btn-concluir {
             background: var(--accent-color); color: #000; border: none; padding: 10px 20px; font-weight: bold; text-transform: uppercase; cursor: pointer; display: none;
         }
+
+        .admin-btn {
+            background: #440000; border: 1px solid #ff4444; color: #fff; padding: 10px; margin-bottom: 5px; font-size: 0.75rem; font-family: var(--font-mono); font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%;
+        }
+        .admin-btn:hover { background: #660000; }
     </style>
 </head>
 <body>
@@ -67,15 +66,14 @@
             <h1 style="color: var(--accent-color); font-size: 1.2rem;">STATUS DA MISSÃO</h1>
             <p id="status-text">INICIANDO OPERAÇÃO...</p>
             <div class="timer" id="mission-timer">00:00</div>
-            <button id="btn-concluir" onclick="concluirMissao()">Terminar Missão e Gerar Relatório</button>
+            <button id="btn-concluir" onclick="concluirMissao()">Terminar Missão e Retornar à Base</button>
         </div>
     </div>
 
     <header>
-        <div><strong>SECURUS DYNAMICS</strong> | FALCÃO SOMBRIO GCS</div>
+        <div><strong>SECURUS DYNAMICS</strong> | AQUILA-X</div>
         <div style="display: flex; align-items: center; gap: 20px;">
             <div class="status-tag">Status: <span id="sys-status">Standby</span></div>
-            
             <form action="/logout" method="POST" style="margin: 0;">
                 <button type="submit" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; font-family: var(--font-mono); font-size: 0.75rem; padding: 4px 10px; cursor: pointer; text-transform: uppercase; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#ff4444'; this.style.color='#000'" onmouseout="this.style.background='transparent'; this.style.color='#ff4444'">
                     Encerrar Sessão 
@@ -88,27 +86,26 @@
         <section class="panel">
             <h2>Operação de Frota</h2>
             <div class="telemetry-item">Operador: <span class="value" id="op-logado">---</span></div>
-            <div class="telemetry-item">Nível: <span class="value">ROLE_ADMIN</span></div>
+            <div class="telemetry-item">Nível: <span class="value" id="role-logado">AGUARDANDO...</span></div>
             
-            <label style="font-size: 0.7rem; color: #888;">SELECIONAR FROTA (SQL)</label>
-            <select id="frota-select">
-                <option value="FL-ALFA">Frota ALFA (Rastreadores)</option>
-                <option value="FL-BRAVO">Frota BRAVO (Combate Tático)</option>
-                <option value="FL-CHARLIE">Frota CHARLIE (Combate PEM)</option>
-            </select>
+            <div id="container-admin-frotas" style="display: none; border: 1px dashed #ff4444; padding: 10px; margin-bottom: 15px;">
+                <label style="font-size: 0.7rem; color: #ff4444; font-weight: bold; display: block; margin-bottom: 5px;">PAINEL EXCLUSIVO WINDOWS</label>
+                <button class="admin-btn" onclick="solicitarCriacaoFrota()">Criar Nova Frota</button>
+                <button class="admin-btn" onclick="solicitarRemocaoFrota()">Remover Frota Selecionada</button>
+            </div>
 
-            <label style="font-size: 0.7rem; color: #888;">SELECIONAR COMANDO (Sequência)</label>
-            <select id="comando-select">
-                <option value="VIGILAR">Modo Vigilância (Transmitir Telemetria)</option>
-                <option value="ATACAR">Modo Ataque (Cofre-Alvo)</option>
-            </select>
+            <label style="font-size: 0.7rem; color: #888;">SELECIONAR FROTA</label>
+            <select id="frota-select"></select>
+
+            <label style="font-size: 0.7rem; color: #888;">SELECIONAR COMANDO (DO SUPABASE)</label>
+            <select id="comando-select"></select>
             
             <button class="cmd-btn" id="btn-iniciar" onclick="iniciarComando()">Aguardando Alvo no Mapa...</button>
             <p style="font-size: 0.65rem; color: #777;">Clique no mapa para definir o local da missão.</p>
 
             <hr style="width:100%; border:0; border-top:1px solid #333;">
-            <h2>Telemetria em Tempo Real (NoSQL)</h2>
-            <div class="telemetry-item">ID Drone: <span class="value">DRN-001 (ALFA)</span></div>
+            <h2>Telemetria em Tempo Real </h2>
+            <div class="telemetry-item">ID Drone: <span class="value" id="drone-id-val">DRN-001 (ALFA)</span></div>
             <div class="telemetry-item">Bateria: <span class="value" id="bat-val">---</span></div>
             <div class="telemetry-item">Altitude: <span class="value" id="alt-val">---</span></div>
             <div class="telemetry-item">Lat/Long: <span class="value" id="coords-val">---</span></div>
@@ -121,114 +118,267 @@
         </section>
 
         <section class="panel">
-            <h2>Audit Log (JSON Document)</h2>
+            <h2>Audit Log</h2>
             <div id="log-console"></div>
         </section>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Verificação de Segurança (Ponto de Entrada)
         const opLogado = sessionStorage.getItem('operadorLogado');
-        if (!opLogado) {
-            window.location.href = 'login.html'; // Redireciona se não houver sessão
-        }
+        if (!opLogado) { window.location.href = 'login.html'; }
         document.getElementById('op-logado').innerText = opLogado;
 
-        // --- Configuração do Mapa Leaflet.js ---
-        // Coordenadas iniciais: Mackenzie, São Paulo
-        var map = L.map('map').setView([-23.5489, -46.6388], 15);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: 'Securus GCS | Leaflet.js | CartoDB'
+        // COORDENADAS FIXAS DA BASE MILITAR (MACKENZIE)
+        const baseLat = -23.5489;
+        const baseLng = -46.6388;
+
+        // --- DEFINIÇÃO DOS ÍCONES IMAGEM REAL DO DRONE ---
+        
+        // Drone Principal de Operação (Grande - Escala Real da Foto)
+        var iconeDroneGigante = L.icon({
+            iconUrl: 'drone.png', 
+            iconSize: [120, 120],     // Ajusta as dimensões da imagem do drone na tela
+            iconAnchor: [60, 60],     // Centraliza o ponto de ancoragem do marcador
+            popupAnchor: [0, -40]     // Ajusta a posição da caixinha de texto acima dele
+        });
+
+        // Drones Reservas da Base (Menores)
+        var iconeDroneReserva = L.icon({
+            iconUrl: 'drone.png',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+
+        // --- 1. SINCRONIZAÇÃO DINÂMICA DE COMANDOS DA TABELA 'MISSAO' ---
+        async function carregarMissoesDoSupabase() {
+            try {
+                const response = await fetch('/api/missoes');
+                if (response.ok) {
+                    const missoes = await response.json();
+                    const selectComando = document.getElementById('comando-select');
+                    selectComando.innerHTML = ''; 
+
+                    if (missoes.length === 0) {
+                        const option = document.createElement('option');
+                        option.text = "NENHUM COMANDO NO BANCO";
+                        selectComando.appendChild(option);
+                        return;
+                    }
+
+                    missoes.forEach(m => {
+                        if (m.objetivos) {
+                            const option = document.createElement('option');
+                            option.value = m.objetivos;
+                            option.text = `COMANDO: ${m.objetivos.toUpperCase()}`;
+                            selectComando.appendChild(option);
+                        }
+                    });
+                }
+            } catch (error) { console.error("Erro ao ler dados de missões:", error); }
+        }
+
+        // --- 2. GERENCIAMENTO DE FROTAS PERSISTENTE ---
+        async function carregarFrotasDoBanco() {
+            try {
+                const response = await fetch('/api/frotas');
+                if (response.ok) {
+                    const frotas = await response.json();
+                    const selectFrota = document.getElementById('frota-select');
+                    selectFrota.innerHTML = ''; 
+
+                    frotas.forEach(f => {
+                        const option = document.createElement('option');
+                        option.value = f.nomeEsquadrao;
+                        option.text = f.nomeEsquadrao;
+                        selectFrota.appendChild(option);
+                    });
+                    atualizarIdDronePorFrota(); 
+                }
+            } catch (error) { console.error("Erro ao sincronizar frotas:", error); }
+        }
+
+        async function solicitarCriacaoFrota() {
+            const novoNome = prompt("Digite o nome do novo esquadrão/frota:");
+            if (!novoNome || novoNome.trim() === "") return;
+
+            try {
+                const response = await fetch('/api/frotas/criar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nomeEsquadrao: novoNome.trim() })
+                });
+
+                if (response.ok) {
+                    alert("Unidade registrada!");
+                    addLog("INSERÇÃO DE FROTA", `O operador WINDOWS criou a frota: ${novoNome.trim()}`);
+                    carregarFrotasDoBanco(); 
+                }
+            } catch (err) { alert("Falha de comunicação."); }
+        }
+
+        async function solicitarRemocaoFrota() {
+            const selectFrota = document.getElementById('frota-select');
+            const frotaSelecionada = selectFrota.value;
+            if (!frotaSelecionada) return;
+
+            if (!confirm(`Confirma a remoção da "${frotaSelecionada}"?`)) return;
+
+            try {
+                const response = await fetch(`/api/frotas/remover?nome=${encodeURIComponent(frotaSelecionada)}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert("Esquadrão desativado!");
+                    addLog("REMOÇÃO DE FROTA", `O operador WINDOWS deletou a frota: ${frotaSelecionada}`);
+                    carregarFrotasDoBanco(); 
+                }
+            } catch (err) { alert("Falha de comunicação."); }
+        }
+
+        // --- 3. CONTROLE DE SEGURANÇA E PRIVILÉGIOS ---
+        async function carregarNivelAcessoReal() {
+            let nivelFinal = "ROLE_OPERADOR";
+            try {
+                const response = await fetch('/api/operador/dados');
+                if (response.ok) {
+                    const dadosOperador = await response.json();
+                    if (dadosOperador.nivelAcesso && dadosOperador.nivelAcesso !== "NENHUM") {
+                        nivelFinal = dadosOperador.nivelAcesso;
+                    }
+                }
+            } catch (error) { console.error("Erro na varredura de dados:", error); }
+
+            document.getElementById('role-logado').innerText = nivelFinal;
+            sessionStorage.setItem('operadorRole', nivelFinal);
+
+            if (opLogado.trim().toUpperCase() === "WINDOWS") {
+                document.getElementById('container-admin-frotas').style.display = 'block';
+            } else {
+                document.getElementById('container-admin-frotas').style.display = 'none';
+            }
+        }
+
+        carregarNivelAcessoReal();
+        carregarFrotasDoBanco();
+        carregarMissoesDoSupabase();
+
+
+        // --- CONFIGURAÇÃO TÁTICA DO MAPA LEAFLET ---
+        var map = L.map('map').setView([baseLat, baseLng], 16);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+        // CONFIGURAÇÃO DA REPRESENTAÇÃO VISUAL DA BASE MILITAR (HANGAR)
+        var baseArea = L.rectangle([
+            [baseLat - 0.0015, baseLng - 0.0015],
+            [baseLat + 0.0015, baseLng + 0.0015]
+        ], {
+            color: "#ff4444",
+            weight: 2,
+            fillColor: "#111",
+            fillOpacity: 0.4,
+            dashArray: "5, 5"
         }).addTo(map);
+        baseArea.bindPopup("<b>BASE CENTRAL FALCÃO SOMBRIO</b><br>Hangar de Lançamento Tático");
 
-        // Marcador do Drone e do Alvo
-        var droneMarker = L.marker([-23.5489, -46.6388], {
-            icon: L.divIcon({className: 'value', html: '🛩️', iconSize: [12,12]})
-        }).addTo(map);
-        droneMarker.bindPopup("DRN-001 (ALFA)").openPopup();
+        // RENDERIZAÇÃO DOS 5 DRONES IMAGEM RESERVAS DA BASE EM FORMAÇÃO
+        // RENDEREZA APENAS 1 DRONE RESERVA ESTACIONADO NA BASE
+        var iconeDroneReserva = L.icon({
+            iconUrl: 'drone.png',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        // DRONE OPERACIONAL PRINCIPAL UTILIZANDO A IMAGEM CUSTOMIZADA GIGANTE
+        var droneMarker = L.marker([baseLat, baseLng], { icon: iconeDroneGigante }).addTo(map);
+        droneMarker.bindPopup("DRN-001 (ALFA) - Prontidão Operacional").openPopup();
 
-        var targetMarker = null; // Guardará o ponto clicado
-        var targetLatLng = null; // Coordenadas do alvo
-        let isMissionRunning = false;
-        let missionTimerInterval = null;
-        let flightInterval = null; // Guardado globalmente para podermos interromper na evasão
+        var targetMarker = null; var targetLatLng = null; let isMissionRunning = false;
+        let missionTimerInterval = null; let flightInterval = null; 
 
-        // Captura de clique no mapa para definir o alvo
         map.on('click', function(e) {
-            if (isMissionRunning) return; // Impede mudar o alvo se a missão estiver rodando
-
+            if (isMissionRunning) return; 
             if (targetMarker) map.removeLayer(targetMarker);
             
             targetLatLng = e.latlng;
             targetMarker = L.marker(targetLatLng, {
                 icon: L.divIcon({className: 'value', html: '❌', iconSize: [15,15]})
             }).addTo(map);
-            targetMarker.bindPopup("ALVO DEFINIDO").openPopup();
 
             document.getElementById('coords-val').innerText = `${targetLatLng.lat.toFixed(4)}, ${targetLatLng.lng.toFixed(4)}`;
-            
-            // Habilita o botão de início e muda o texto
-            const cmd = document.getElementById('comando-select').value;
-            const btn = document.getElementById('btn-iniciar');
-            btn.innerText = `Iniciar Missão de ${cmd}`;
-            addLog(`ALVO_DEFINIDO_LATLONG: ${targetLatLng.lat.toFixed(4)}, ${targetLatLng.lng.toFixed(4)}`);
+            document.getElementById('btn-iniciar').innerText = `Iniciar Missão`;
         });
 
-        // --- Lógica de Simulação de Voo ---
+        // --- SIMULAÇÃO DE VOO DE IDA ---
         function moverDroneParaOAlvo() {
             if (!targetLatLng) return;
-
-            const droneLatLng = droneMarker.getLatLng();
-            const step = 0.0005; // Velocidade da simulação
-            let lat = droneLatLng.lat;
-            let lng = droneLatLng.lng;
-
             isMissionRunning = true;
-            addLog("VOO_INICIADO");
+            const step = 0.0004;
 
-            // Intervalo para mover o drone
             flightInterval = setInterval(() => {
-                const bat = (parseFloat(document.getElementById('bat-val').innerText) || 90) - 0.1;
+                let currentLatLng = droneMarker.getLatLng();
+                let lat = currentLatLng.lat;
+                let lng = currentLatLng.lng;
+
+                const bat = (parseFloat(document.getElementById('bat-val').innerText) || 100) - 0.1;
                 document.getElementById('bat-val').innerText = bat.toFixed(2) + "%";
 
                 if (Math.abs(lat - targetLatLng.lat) < step && Math.abs(lng - targetLatLng.lng) < step) {
                     clearInterval(flightInterval);
-                    droneMarker.setLatLng(targetLatLng); // Garante que chegou no ponto exato
+                    droneMarker.setLatLng(targetLatLng); 
                     iniciarExecucaoDaMissao();
                 } else {
                     if (lat < targetLatLng.lat) lat += step; else lat -= step;
                     if (lng < targetLatLng.lng) lng += step; else lng -= step;
                     droneMarker.setLatLng([lat, lng]);
                     document.getElementById('alt-val').innerText = (120 + Math.random() * 5).toFixed(0) + "m";
+                    document.getElementById('coords-val').innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
                 }
-            }, 200); // Frequência de telemetria
+            }, 100); 
+        }
+
+        // --- SIMULAÇÃO DE VOO DE VOLTA (RETORNO À BASE) ---
+        function retornarDroneParaBase() {
+            document.getElementById('sys-status').innerText = 'RETORNANDO À BASE';
+            const step = 0.0006; 
+
+            flightInterval = setInterval(() => {
+                let currentLatLng = droneMarker.getLatLng();
+                let lat = currentLatLng.lat;
+                let lng = currentLatLng.lng;
+
+                if (Math.abs(lat - baseLat) < step && Math.abs(lng - baseLng) < step) {
+                    clearInterval(flightInterval);
+                    droneMarker.setLatLng([baseLat, baseLng]); 
+                    
+                    isMissionRunning = false;
+                    document.getElementById('sys-status').innerText = 'OPERACIONAL / NA BASE';
+                    document.getElementById('alt-val').innerText = "0 m";
+                    document.getElementById('coords-val').innerText = `${baseLat}, ${baseLng}`;
+                    document.getElementById('btn-iniciar').innerText = `Aguardando Alvo no Mapa...`;
+                } else {
+                    if (lat < baseLat) lat += step; else lat -= step;
+                    if (lng < baseLng) lng += step; else lng -= step;
+                    droneMarker.setLatLng([lat, lng]);
+                    document.getElementById('alt-val').innerText = (80 + Math.random() * 5).toFixed(0) + "m";
+                    document.getElementById('coords-val').innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                }
+            }, 100);
         }
 
         function iniciarComando() {
-            if (!targetLatLng) {
-                alert("ERRO: Alvo não definido no mapa. Clique no mapa tático.");
-                return;
-            }
+            if (!targetLatLng) { alert("ERRO: Escolha um alvo no mapa."); return; }
             if (isMissionRunning) return;
-
             const frota = document.getElementById('frota-select').value;
-            const cmd = document.getElementById('comando-select').value;
-            document.getElementById('sys-status').innerText = `EM MISSÃO: ${cmd} (${frota})`;
-            
+            document.getElementById('sys-status').innerText = `EM MISSÃO (${frota})`;
             moverDroneParaOAlvo();
         }
 
-        // --- Lógica de Execução e Finalização da Missão ---
         function iniciarExecucaoDaMissao() {
-            const frota = document.getElementById('frota-select').value;
-            const cmd = document.getElementById('comando-select').value;
             document.getElementById('mission-overlay').style.display = 'flex';
-            document.getElementById('status-text').innerText = `EXECUTANDO MISSÃO DE ${cmd} NA ÁREA-ALVO`;
-            addLog(`MISSAO_EM_EXECUCAO_${cmd}`);
+            document.getElementById('status-text').innerText = `EXECUTANDO MISSÃO NA ÁREA-ALVO`;
 
             let segundos = 0;
-            // Timer de simulação (5 segundos para demo)
             missionTimerInterval = setInterval(() => {
                 segundos++;
                 const min = Math.floor(segundos / 60).toString().padStart(2, '0');
@@ -237,97 +387,93 @@
 
                 if (segundos === 5) {
                     clearInterval(missionTimerInterval);
-                    document.getElementById('status-text').innerText = `MISSÃO DE ${cmd} CONCLUÍDA COM SUCESSO`;
+                    document.getElementById('status-text').innerText = `MISSÃO CONCLUÍDA COM SUCESSO`;
                     document.getElementById('mission-timer').style.color = 'var(--accent-color)';
                     document.getElementById('btn-concluir').style.display = 'inline-block';
-                    addLog(`MISSAO_STATUS_CONCLUIDA`);
                 }
             }, 1000);
         }
 
         function concluirMissao() {
-            // Reinicia o estado
-            isMissionRunning = false;
+            const localRelatorio = targetLatLng ? `Lat: ${targetLatLng.lat.toFixed(4)}, Lng: ${targetLatLng.lng.toFixed(4)}` : "Não definido";
+            
             if (targetMarker) map.removeLayer(targetMarker);
-            targetMarker = null;
-            targetLatLng = null;
+            targetMarker = null; targetLatLng = null;
 
             document.getElementById('mission-overlay').style.display = 'none';
             document.getElementById('btn-concluir').style.display = 'none';
             document.getElementById('mission-timer').style.color = 'var(--alert-color)';
             document.getElementById('mission-timer').innerText = `00:00`;
-            document.getElementById('sys-status').innerText = 'OPERACIONAL';
-            document.getElementById('btn-iniciar').innerText = `Aguardando Alvo no Mapa...`;
-            addLog("MISSAO_TERMINADA_GERAR_LOG");
-            alert("Missão Concluída. Log de Auditoria gravado no NoSQL. Drone retornando à base (Vigilância).");
+            
+            addLog("MISSAO_CONCLUIDA_RELATORIO", localRelatorio);
+            retornarDroneParaBase();
         }
 
-        // --- Console de Auditoria (NoSQL Logs) ---
-        async function addLog(action) {
+        // --- CONSOLE DE AUDITORIA CENTRALIZADO ---
+        async function addLog(action, localSelecionado = "Não definido") {
             const consoleBox = document.getElementById('log-console');
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
+            if (!consoleBox) return;
 
-            // Objeto que bate certinho com a sua classe Log.java
             const logData = {
                 acao: action,
                 dadosJson: JSON.stringify({
-                    timestamp: new Date().toISOString(),
                     id_operador: opLogado,
-                    id_frota: document.getElementById('frota-select').value,
+                    id_frota: document.getElementById('frota-select').value || "NENHUMA",
                     status: document.getElementById('sys-status').innerText,
                     altitude: document.getElementById('alt-val').innerText,
-                    bateria: document.getElementById('bat-val').innerText
+                    bateria: document.getElementById('bat-val').innerText,
+                    detalhes: localSelecionado
                 })
             };
 
-            // 1. Faz aparecer na telinha preta do site
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
             entry.innerHTML = `<pre class="log-json">${JSON.stringify(logData, null, 2)}</pre>`;
             consoleBox.prepend(entry);
 
-            // 2. ENVIA PARA O MONGODB (Ajustado para o endpoint real /api/logs/gravar)
             try {
                 await fetch('/api/logs/gravar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(logData)
                 });
-                console.log("Log salvo no MongoDB Atlas com sucesso!");
-            } catch (err) {
-                console.error("Erro ao conectar com o Java para gravar log:", err);
-            }
+            } catch (err) { console.error("Erro ao transmitir pacote de log:", err); }
         }
 
-        // --- Protocolo Crítico de Emergência ---
+        function atualizarIdDronePorFrota() {
+            const selectFrota = document.getElementById('frota-select');
+            const displayDroneId = document.getElementById('drone-id-val');
+            if (!selectFrota || !displayDroneId || !selectFrota.value) return;
+            
+            const frotaSelecionada = selectFrota.value.toUpperCase();
+            if (frotaSelecionada.includes('ALFA')) displayDroneId.innerText = "DRN-001 (ALFA)";
+            else if (frotaSelecionada.includes('BRAVO')) displayDroneId.innerText = "DRN-002 (BRAVO)";
+            else if (frotaSelecionada.includes('CHARLIE')) displayDroneId.innerText = "DRN-003 (CHARLIE)";
+            else displayDroneId.innerText = `DRN-NEW (${selectFrota.value.substring(0,10)})`;
+        }
+
+        const selectElement = document.getElementById('frota-select');
+        if (selectElement) { selectElement.addEventListener('change', atualizarIdDronePorFrota); }
+
+        // --- PROTOCOLO DE EVASÃO COPIANDO RETORNO IMEDIATO ---
         function ativarEvasao() {
-            // 1. Aborta imediatamente qualquer simulação ativa de voo ou timer de missão
             if (flightInterval) clearInterval(flightInterval);
             if (missionTimerInterval) clearInterval(missionTimerInterval);
-
-            // 2. Reseta o overlay visual e limpa os marcadores de alvo
+            const localEvasao = targetLatLng ? `Lat: ${targetLatLng.lat.toFixed(4)}, Lng: ${targetLatLng.lng.toFixed(4)}` : "Rota de Patrulha";
+            
             document.getElementById('mission-overlay').style.display = 'none';
             document.getElementById('btn-concluir').style.display = 'none';
             if (targetMarker) map.removeLayer(targetMarker);
-            targetMarker = null;
-            targetLatLng = null;
-
-            // 3. Atualiza os painéis de status do sistema militar
-            document.getElementById('sys-status').innerText = 'CONFLITO: EVASÃO ATIVADA';
-            document.getElementById('btn-iniciar').innerText = `Aguardando Alvo no Mapa...`;
+            targetMarker = null; targetLatLng = null;
             
-            // 4. Emite o alerta em tela e dispara o Log Crítico para o MongoDB
-            alert("ALERTA CRÍTICO: PROTOCOLO DE EVASÃO ACIONADO! Drone desviando para rota oculta.");
-            addLog("EVENTO_CRITICO_EVASAO_ATIVADA");
-            
-            isMissionRunning = false;
+            alert("ALERTA CRÍTICO: PROTOCOLO DE EVASÃO ACIONADO! RETORNANDO À BASE IMEDIATAMENTE.");
+            addLog("EVENTO_CRITICO_EVASAO_ATIVADA", localEvasao);
+            retornarDroneParaBase();
         }
 
-        // Simulação de telemetria inicial
         document.getElementById('bat-val').innerText = "100.00%";
         document.getElementById('alt-val').innerText = "0 m";
-        document.getElementById('coords-val').innerText = "-23.5489, -46.6388";
-        addLog("SISTEMA_STANDBY");
-
+        document.getElementById('coords-val').innerText = `${baseLat}, ${baseLng}`;
     </script>
 </body>
 </html>

@@ -1,5 +1,12 @@
 package com.securus.falcao_sombrio;
 
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -9,7 +16,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "operador")
-public class Operador {
+public class Operador implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,16 +32,44 @@ public class Operador {
 
     private String nivelAcesso;
 
-    // Métodos de negócio
+    // --- MÉTODOS OBRIGATÓRIOS DO SPRING SECURITY (USERDETAILS) ---
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(this.nivelAcesso));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.senha;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.login;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+    @Override
+    public boolean isEnabled() { return true; }
+
+    // --- MÉTODOS DE NEGÓCIO ORIGINAIS (CORRIGIDO PARA RECONHECER A NOVA CLASSE MISSAO) ---
     public void acessarSistema() { 
         System.out.println("Operador " + nome + " acessando o sistema...");
     }
 
     public void planejarMissao(Missao m) { 
-        System.out.println("Planejando missão: " + m.getObjetivos());
+        if (m != null) {
+            System.out.println("Planejando missão: " + m.getObjetivos());
+        }
     }
 
-    // Getters e Setters
+    // --- GETTERS E SETTERS COMPLETOS ---
     public int getIdOperador() { return idOperador; }
     public void setIdOperador(int idOperador) { this.idOperador = idOperador; }
 
@@ -47,11 +82,6 @@ public class Operador {
     public String getSenha() { return senha; }
     public void setSenha(String senha) { this.senha = senha; }
 
-    public String getNivelAcesso() { 
-        return this.nivelAcesso; 
-    }
-
-    public void setNivelAcesso(String nivelAcesso) { 
-        this.nivelAcesso = nivelAcesso; 
-    }
+    public String getNivelAcesso() { return this.nivelAcesso; }
+    public void setNivelAcesso(String nivelAcesso) { this.nivelAcesso = nivelAcesso; }
 }
