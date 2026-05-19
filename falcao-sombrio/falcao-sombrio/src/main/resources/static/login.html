@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Securus Dynamics - Login Militar</title>
+    <style>
+        :root {
+            --bg-color: #0a0c0f;
+            --panel-color: #1a1d23;
+            --accent-color: #32CD32; /* Cyber-Lime */
+            --text-color: #e0e6ed;
+            --font-mono: 'JetBrains Mono', 'Roboto Mono', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-mono);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-card {
+            background: var(--panel-color);
+            border: 2px solid #333;
+            padding: 40px;
+            width: 400px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .login-card:hover { border-color: var(--accent-color); }
+
+        h1 { color: var(--accent-color); font-size: 1.2rem; text-transform: uppercase; margin-bottom: 5px; }
+        p { font-size: 0.8rem; color: #aaa; margin-bottom: 30px; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #000;
+            border: 1px solid #444;
+            color: #fff;
+            box-sizing: border-box; /* Corrigido para os campos não passarem da borda */
+            transition: border-color 0.2s;
+        }
+
+        input:focus { border-color: var(--accent-color); outline: none; }
+
+        label { display: block; text-align: left; font-size: 0.7rem; color: #888; margin-bottom: 5px; }
+
+        .btn-login {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 15px;
+        }
+
+        .btn-login:hover { background: #2ab72a; }
+
+        #error-msg { color: #ff4444; font-size: 0.8rem; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+    <form class="login-card" action="/login" method="POST" onsubmit="gravarSessaoTemporaria()">
+        <h1>FALCÃO SOMBRIO GCS</h1>
+        <p>AUTENTICAÇÃO MILITAR REQUERIDA</p>
+        
+        <label>ID DO OPERADOR (Vínculo SQL)</label>
+        <input type="text" placeholder="Ex: OP-772" id="user-id" name="username" required>
+        
+        <label>SENHA (BCrypt Protegido)</label>
+        <input type="password" placeholder="••••••••" id="password" name="password" required>
+        
+        <label>CERTIFICADO DIGITAL X.509 (Opcional p/ Demo)</label>
+        <input type="file" id="cert-upload">
+        
+        <button type="submit" class="btn-login">EFETUAR LOGIN</button>
+        
+        <p id="error-msg">Acesso Negado: Credenciais ou Certificado Inválidos.</p>
+        
+        <p style="font-size: 0.6rem; margin-top: 40px; color: #666;">Securus Dynamics &copy; 2026</p>
+    </form>
+
+    <script>
+        // Pequena lógica de apoio para manter o comportamento visual de erro e sessão
+        
+        // 1. Se o Spring Security rejeitar a senha, ele volta com "?error" na URL. Ligamos o seu erro-msg!
+        if (window.location.search.includes("error")) {
+            document.getElementById('error-msg').style.display = 'block';
+        }
+
+        // 2. Alimenta o sessionStorage apenas para a sua tela principal continuar exibindo quem logou
+        if (window.location.search.includes("logout")) {
+            sessionStorage.clear();
+        }
+
+        function gravarSessaoTemporaria() {
+            const id = document.getElementById('user-id').value;
+            sessionStorage.setItem('operadorLogado', id);
+        }
+    </script>
+</body>
+</html>
