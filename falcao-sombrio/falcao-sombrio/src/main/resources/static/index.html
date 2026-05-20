@@ -290,20 +290,29 @@
             iconAnchor: [20, 20]
         });
         // DRONE OPERACIONAL PRINCIPAL UTILIZANDO A IMAGEM CUSTOMIZADA GIGANTE
+        // 1. Criamos o emoji do helicóptero como o ícone oficial antes de tudo
+        var iconeDroneGigante = L.divIcon({
+            html: '<div style="font-size: 32px; text-align: center; line-height: 32px;">🚁</div>',
+            className: '', 
+            iconSize: [32, 32],
+            iconAnchor: [16, 16], 
+            popupAnchor: [0, -16]
+        });
+
+        // 2. O drone nasce na base usando o ícone do emoji perfeitamente
         var droneMarker = L.marker([baseLat, baseLng], { icon: iconeDroneGigante }).addTo(map);
         droneMarker.bindPopup("DRN-001 (ALFA) - Prontidão Operacional").openPopup();
 
         var targetMarker = null; var targetLatLng = null; let isMissionRunning = false;
         let missionTimerInterval = null; let flightInterval = null; 
 
+        // 3. Evento de clique limpo (Sem o ícone perdido aqui dentro)
         map.on('click', function(e) {
             if (isMissionRunning) return; 
             if (targetMarker) map.removeLayer(targetMarker);
             
             targetLatLng = e.latlng;
-            targetMarker = L.marker(targetLatLng, {
-                icon: L.divIcon({className: 'value', html: '❌', iconSize: [15,15]})
-            }).addTo(map);
+            targetMarker = L.marker(targetLatLng).addTo(map);
 
             document.getElementById('coords-val').innerText = `${targetLatLng.lat.toFixed(4)}, ${targetLatLng.lng.toFixed(4)}`;
             document.getElementById('btn-iniciar').innerText = `Iniciar Missão`;

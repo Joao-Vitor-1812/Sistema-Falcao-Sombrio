@@ -2,120 +2,144 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Securus Dynamics - Login Militar</title>
+    <title>GCS - Autenticação Tática</title>
     <style>
         :root {
-            --bg-color: #0a0c0f;
-            --panel-color: #1a1d23;
-            --accent-color: #32CD32; /* Cyber-Lime */
-            --text-color: #e0e6ed;
+            --bg-color: #050505;
+            --accent-color: #32CD32;
+            --alert-color: #ff4444;
             --font-mono: 'JetBrains Mono', 'Roboto Mono', monospace;
         }
-
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--font-mono);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            background-color: var(--bg-color); color: var(--accent-color); font-family: var(--font-mono);
+            display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;
+            background-image: radial-gradient(circle, #111 1px, transparent 1px); background-size: 20px 20px;
         }
-
-        .login-card {
-            background: var(--panel-color);
-            border: 2px solid #333;
-            padding: 40px;
-            width: 400px;
-            text-align: center;
-            transition: border-color 0.3s;
+        .login-box {
+            background: #0a0a0a; border: 1px solid var(--accent-color); padding: 40px;
+            width: 350px; text-align: center; box-shadow: 0 0 15px rgba(50, 205, 50, 0.2);
         }
-
-        .login-card:hover { border-color: var(--accent-color); }
-
-        h1 { color: var(--accent-color); font-size: 1.2rem; text-transform: uppercase; margin-bottom: 5px; }
-        p { font-size: 0.8rem; color: #aaa; margin-bottom: 30px; }
-
+        h1 { font-size: 1.2rem; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px; letter-spacing: 2px; }
         input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            background: #000;
-            border: 1px solid #444;
-            color: #fff;
-            box-sizing: border-box; /* Corrigido para os campos não passarem da borda */
-            transition: border-color 0.2s;
+            width: 90%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #333;
+            color: var(--accent-color); font-family: var(--font-mono); outline: none;
         }
-
-        input:focus { border-color: var(--accent-color); outline: none; }
-
-        label { display: block; text-align: left; font-size: 0.7rem; color: #888; margin-bottom: 5px; }
-
-        .btn-login {
-            background: var(--accent-color);
-            color: #000;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-top: 15px;
+        input:focus { border-color: var(--accent-color); }
+        button {
+            width: 95%; padding: 12px; margin-top: 15px; background: var(--accent-color);
+            color: #000; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: var(--font-mono);
         }
-
-        .btn-login:hover { background: #2ab72a; }
-
-        #error-msg { color: #ff4444; font-size: 0.8rem; margin-top: 15px; display: none; }
+        button:hover { background: #28a428; }
+        
+        /* Estilos do MFA */
+        #mfa-section { display: none; }
+        .mfa-alert { color: var(--alert-color); font-size: 0.85rem; margin-bottom: 15px; border: 1px dashed var(--alert-color); padding: 10px; }
+        
+        input[type="file"] { display: none; }
+        .file-upload-btn {
+            background: #222; border: 1px solid var(--alert-color); color: var(--alert-color);
+            padding: 10px; display: inline-block; cursor: pointer; width: 90%; text-transform: uppercase; font-size: 0.8rem;
+        }
+        .file-upload-btn:hover { background: var(--alert-color); color: #000; }
+        #file-name-display { font-size: 0.7rem; color: #888; margin-top: 10px; display: block; }
     </style>
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Falcão Sombrio GCS - Autenticação</title>
-    </head>
+</head>
 <body>
 
-    <form class="login-card" action="/login" method="POST" id="loginForm">
-        <h1>FALCÃO SOMBRIO GCS</h1>
-        <p>AUTENTICAÇÃO MILITAR REQUERIDA</p>
+    <div class="login-box">
+        <h1>SECURUS DYNAMICS</h1>
         
-        <label>ID DO OPERADOR (Vínculo SQL)</label>
-        <input type="text" placeholder="Ex: OP-772" id="user-id" name="username" required>
-        
-        <label>SENHA (BCrypt Protegido)</label>
-        <input type="password" placeholder="••••••••" id="password" name="password" required>
-        
-        <label>CERTIFICADO DIGITAL X.509 (Opcional p/ Demo)</label>
-        <input type="file" id="cert-upload">
-        
-        <button type="submit" class="btn-login">EFETUAR LOGIN</button>
-        
-        <p id="error-msg" style="display: none; color: #ff4d4d; font-size: 0.8rem; margin-top: 15px;">
-            Acesso Negado: Credenciais ou Certificado Inválidos.
-        </p>
-        
-        <p style="font-size: 0.6rem; margin-top: 40px; color: #666;">Securus Dynamics &copy; 2026</p>
-    </form>
+        <div id="login-section">
+            <p style="font-size: 0.8rem; color: #aaa;">IDENTIFICAÇÃO DE OPERADOR</p>
+            <input type="text" id="username" placeholder="LOGIN" autocomplete="off" required>
+            <input type="password" id="password" placeholder="SENHA" required>
+            <button onclick="verificarMFA()">Autenticar</button>
+            <p id="error-msg" style="color: var(--alert-color); font-size: 0.8rem; display: none;"></p>
+        </div>
+
+        <div id="mfa-section">
+            <div class="mfa-alert">
+                <strong>PROTOCOLO MFA EXIGIDO</strong><br>
+                Insira a Chave de Segurança USB
+            </div>
+            
+            <label class="file-upload-btn">
+                SELECIONAR ARQUIVO CHAVE (.key)
+                <input type="file" id="hardware-key-file" accept=".key" onchange="lerArquivoKey()">
+            </label>
+            <span id="file-name-display">Nenhum hardware detectado.</span>
+            
+            <button onclick="enviarLoginMFA()" id="btn-finalizar" style="display:none; background: var(--alert-color);">Desbloquear Sistema</button>
+        </div>
+    </div>
 
     <script>
-        // Se a URL contiver '?error', exibe a mensagem de credenciais inválidas do Spring Security
-        if (window.location.search.includes("error")) {
-            document.getElementById('error-msg').style.display = 'block';
+        let chaveLidaDoPendrive = null;
+
+        function verificarMFA() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value;
+
+            if (user === "" || pass === "") {
+                alert("Por favor, preencha o login e a senha.");
+                return;
+            }
+
+            // Agora, não importa quem seja, esconde o login e exige o pendrive!
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('mfa-section').style.display = 'block';
         }
 
-        // Se a URL contiver '?logout', limpa os dados salvos localmente
-        if (window.location.search.includes("logout")) {
-            sessionStorage.clear();
+        // Lê o conteúdo do arquivo 'securus_hardware_token.key' do pendrive
+        function lerArquivoKey() {
+            const fileInput = document.getElementById('hardware-key-file');
+            const file = fileInput.files[0];
+            
+            if (file) {
+                document.getElementById('file-name-display').innerText = "Lendo Hardware: " + file.name;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    chaveLidaDoPendrive = e.target.result; // Salva a assinatura lida
+                    document.getElementById('btn-finalizar').style.display = 'block';
+                    document.getElementById('file-name-display').style.color = "var(--accent-color)";
+                    document.getElementById('file-name-display').innerText = "Assinatura Criptográfica Extraída com Sucesso.";
+                };
+                reader.readAsText(file);
+            }
         }
 
-        // Ao enviar o formulário, grava quem tentou o login apenas para exibição inicial de interface
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
-            const id = document.getElementById('user-id').value;
-            sessionStorage.setItem('operadorLogado', id);
-        });
+        // Dispara tudo para o AuthController do Java
+        async function enviarLoginMFA() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            const payload = {
+                username: user,
+                password: pass,
+                hardwareKey: chaveLidaDoPendrive
+            };
+
+            try {
+                const response = await fetch('/api/auth/mfa-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const operadorLogado = await response.text();
+                    sessionStorage.setItem('operadorLogado', operadorLogado);
+                    window.location.href = 'index.html'; // Redireciona para o painel do drone
+                } else {
+                    const errorText = await response.text();
+                    alert("FALHA CRÍTICA: " + errorText);
+                    window.location.reload(); // Reinicia a página em caso de falha de hardware
+                }
+            } catch (err) {
+                alert("Erro de comunicação com o servidor.");
+            }
+        }
     </script>
-
 </body>
 </html>

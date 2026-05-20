@@ -42,8 +42,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable()) // Mantido desativado para permitir requisições via fetch do JavaScript
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/login.html", "/css/**", "/js/**", "/api/logs/**", "/api/operador/dados", "/api/frotas/**", "/api/missoes/**").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/", "/index.html", "/login", "/login.html", "/css/**", "/js/**", "/api/logs/**", "/api/operador/dados", "/api/frotas/**", "/api/missoes/**", "/api/auth/**").permitAll()
             )
             .formLogin(form -> form
                 .loginPage("/login.html")
