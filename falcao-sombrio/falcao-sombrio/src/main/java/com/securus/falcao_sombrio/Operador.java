@@ -32,22 +32,20 @@ public class Operador implements UserDetails {
 
     private String nivelAcesso;
 
-    // --- MÉTODOS OBRIGATÓRIOS DO SPRING SECURITY (USERDETAILS) ---
+    @Column(name = "hardware_key")
+    private String hardwareKey;
 
+    // --- MÉTODOS OBRIGATÓRIOS DO SPRING SECURITY (USERDETAILS) ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(this.nivelAcesso));
     }
 
     @Override
-    public String getPassword() {
-        return this.senha;
-    }
+    public String getPassword() { return this.senha; }
 
     @Override
-    public String getUsername() {
-        return this.login;
-    }
+    public String getUsername() { return this.login; }
 
     @Override
     public boolean isAccountNonExpired() { return true; }
@@ -58,7 +56,7 @@ public class Operador implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 
-    // --- MÉTODOS DE NEGÓCIO ORIGINAIS (CORRIGIDO PARA RECONHECER A NOVA CLASSE MISSAO) ---
+    // --- MÉTODOS DE NEGÓCIO ORIGINAIS ---
     public void acessarSistema() { 
         System.out.println("Operador " + nome + " acessando o sistema...");
     }
@@ -84,4 +82,7 @@ public class Operador implements UserDetails {
 
     public String getNivelAcesso() { return this.nivelAcesso; }
     public void setNivelAcesso(String nivelAcesso) { this.nivelAcesso = nivelAcesso; }
+
+    public String getHardwareKey() { return this.hardwareKey; }
+    public void setHardwareKey(String hardwareKey) { this.hardwareKey = hardwareKey; }
 }

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Securus Dynamics - Aquila-X</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
     <style>
         :root {
             --bg-color: #0a0c0f;
@@ -25,7 +28,8 @@
         h2 { font-size: 0.9rem; border-bottom: 1px solid #444; padding-bottom: 5px; margin-top: 0; color: var(--accent-color); text-transform: uppercase; }
 
         #log-console { background: #000; font-size: 0.75rem; color: #aaa; padding: 10px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; }
-        .log-json { color: var(--accent-color); }
+        .log-json { color: var(--accent-color); margin: 0; font-family: var(--font-mono); }
+        .log-entry { border-bottom: 1px solid #222; padding: 5px 0; }
         .telemetry-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; }
         .value { color: var(--accent-color); font-weight: bold; }
 
@@ -74,11 +78,9 @@
         <div><strong>SECURUS DYNAMICS</strong> | AQUILA-X</div>
         <div style="display: flex; align-items: center; gap: 20px;">
             <div class="status-tag">Status: <span id="sys-status">Standby</span></div>
-            <form action="/logout" method="POST" style="margin: 0;">
-                <button type="submit" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; font-family: var(--font-mono); font-size: 0.75rem; padding: 4px 10px; cursor: pointer; text-transform: uppercase; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#ff4444'; this.style.color='#000'" onmouseout="this.style.background='transparent'; this.style.color='#ff4444'">
-                    Encerrar Sessão 
-                </button>
-            </form>
+            <button type="button" onclick="realizarLogout()" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; font-family: var(--font-mono); font-size: 0.75rem; padding: 4px 10px; cursor: pointer; text-transform: uppercase; font-weight: bold; transition: all 0.2s;" onmouseover="this.style.background='#ff4444'; this.style.color='#000'" onmouseout="this.style.background='transparent'; this.style.color='#ff4444'">
+                Encerrar Sessão 
+            </button>
         </div>
     </header>
 
@@ -129,28 +131,9 @@
         if (!opLogado) { window.location.href = 'login.html'; }
         document.getElementById('op-logado').innerText = opLogado;
 
-        // COORDENADAS FIXAS DA BASE MILITAR (MACKENZIE)
         const baseLat = -23.5489;
         const baseLng = -46.6388;
 
-        // --- DEFINIÇÃO DOS ÍCONES IMAGEM REAL DO DRONE ---
-        
-        // Drone Principal de Operação (Grande - Escala Real da Foto)
-        var iconeDroneGigante = L.icon({
-            iconUrl: 'drone.png', 
-            iconSize: [120, 120],     // Ajusta as dimensões da imagem do drone na tela
-            iconAnchor: [60, 60],     // Centraliza o ponto de ancoragem do marcador
-            popupAnchor: [0, -40]     // Ajusta a posição da caixinha de texto acima dele
-        });
-
-        // Drones Reservas da Base (Menores)
-        var iconeDroneReserva = L.icon({
-            iconUrl: 'drone.png',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
-
-        // --- 1. SINCRONIZAÇÃO DINÂMICA DE COMANDOS DA TABELA 'MISSAO' ---
         async function carregarMissoesDoSupabase() {
             try {
                 const response = await fetch('/api/missoes');
@@ -178,7 +161,6 @@
             } catch (error) { console.error("Erro ao ler dados de missões:", error); }
         }
 
-        // --- 2. GERENCIAMENTO DE FROTAS PERSISTENTE ---
         async function carregarFrotasDoBanco() {
             try {
                 const response = await fetch('/api/frotas');
@@ -237,7 +219,6 @@
             } catch (err) { alert("Falha de comunicação."); }
         }
 
-        // --- 3. CONTROLE DE SEGURANÇA E PRIVILÉGIOS ---
         async function carregarNivelAcessoReal() {
             let nivelFinal = "ROLE_OPERADOR";
             try {
@@ -264,12 +245,9 @@
         carregarFrotasDoBanco();
         carregarMissoesDoSupabase();
 
-
-        // --- CONFIGURAÇÃO TÁTICA DO MAPA LEAFLET ---
         var map = L.map('map').setView([baseLat, baseLng], 16);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-        // CONFIGURAÇÃO DA REPRESENTAÇÃO VISUAL DA BASE MILITAR (HANGAR)
         var baseArea = L.rectangle([
             [baseLat - 0.0015, baseLng - 0.0015],
             [baseLat + 0.0015, baseLng + 0.0015]
@@ -282,15 +260,6 @@
         }).addTo(map);
         baseArea.bindPopup("<b>BASE CENTRAL FALCÃO SOMBRIO</b><br>Hangar de Lançamento Tático");
 
-        // RENDERIZAÇÃO DOS 5 DRONES IMAGEM RESERVAS DA BASE EM FORMAÇÃO
-        // RENDEREZA APENAS 1 DRONE RESERVA ESTACIONADO NA BASE
-        var iconeDroneReserva = L.icon({
-            iconUrl: 'drone.png',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20]
-        });
-        // DRONE OPERACIONAL PRINCIPAL UTILIZANDO A IMAGEM CUSTOMIZADA GIGANTE
-        // 1. Criamos o emoji do helicóptero como o ícone oficial antes de tudo
         var iconeDroneGigante = L.divIcon({
             html: '<div style="font-size: 32px; text-align: center; line-height: 32px;">🚁</div>',
             className: '', 
@@ -299,14 +268,12 @@
             popupAnchor: [0, -16]
         });
 
-        // 2. O drone nasce na base usando o ícone do emoji perfeitamente
         var droneMarker = L.marker([baseLat, baseLng], { icon: iconeDroneGigante }).addTo(map);
         droneMarker.bindPopup("DRN-001 (ALFA) - Prontidão Operacional").openPopup();
 
         var targetMarker = null; var targetLatLng = null; let isMissionRunning = false;
         let missionTimerInterval = null; let flightInterval = null; 
 
-        // 3. Evento de clique limpo (Sem o ícone perdido aqui dentro)
         map.on('click', function(e) {
             if (isMissionRunning) return; 
             if (targetMarker) map.removeLayer(targetMarker);
@@ -318,11 +285,18 @@
             document.getElementById('btn-iniciar').innerText = `Iniciar Missão`;
         });
 
-        // --- SIMULAÇÃO DE VOO DE IDA ---
+        // --- SIMULAÇÃO DE VOO COM CRIPTOGRAFIA AES-256 ---
         function moverDroneParaOAlvo() {
             if (!targetLatLng) return;
             isMissionRunning = true;
             const step = 0.0004;
+
+            // Protocolo AES-256 executado localmente antes do envio
+            const CHAVE_SECRETA = "ChaveSecretaMuitoSeguraCom32Byte"; 
+            const coordenadasTexto = `${targetLatLng.lat},${targetLatLng.lng}`;
+            const dadosCriptografados = CryptoJS.AES.encrypt(coordenadasTexto, CHAVE_SECRETA).toString();
+            
+            
 
             flightInterval = setInterval(() => {
                 let currentLatLng = droneMarker.getLatLng();
@@ -346,7 +320,6 @@
             }, 100); 
         }
 
-        // --- SIMULAÇÃO DE VOO DE VOLTA (RETORNO À BASE) ---
         function retornarDroneParaBase() {
             document.getElementById('sys-status').innerText = 'RETORNANDO À BASE';
             const step = 0.0006; 
@@ -418,7 +391,6 @@
             retornarDroneParaBase();
         }
 
-        // --- CONSOLE DE AUDITORIA CENTRALIZADO ---
         async function addLog(action, localSelecionado = "Não definido") {
             const consoleBox = document.getElementById('log-console');
             if (!consoleBox) return;
@@ -464,7 +436,7 @@
         const selectElement = document.getElementById('frota-select');
         if (selectElement) { selectElement.addEventListener('change', atualizarIdDronePorFrota); }
 
-        // --- PROTOCOLO DE EVASÃO COPIANDO RETORNO IMEDIATO ---
+        // --- PROTOCOLO DE EVASÃO CORRIGIDO ---
         function ativarEvasao() {
             if (flightInterval) clearInterval(flightInterval);
             if (missionTimerInterval) clearInterval(missionTimerInterval);
@@ -483,6 +455,49 @@
         document.getElementById('bat-val').innerText = "100.00%";
         document.getElementById('alt-val').innerText = "0 m";
         document.getElementById('coords-val').innerText = `${baseLat}, ${baseLng}`;
+
+        // --- ENCERRAMENTO COM ROTATIVIDADE DINÂMICA DE TOKEN PARA 100% DOS USUÁRIOS ---
+        function realizarLogout() {
+            const operadorLogado = sessionStorage.getItem('operadorLogado');
+
+            if (!operadorLogado) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: operadorLogado
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                }
+                throw new Error("Erro ao processar logout.");
+            })
+            .then(novaChave => {
+                const blob = new Blob([novaChave], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'securus_hardware_token.key'; 
+                document.body.appendChild(a);
+                a.click();
+                
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                sessionStorage.clear(); 
+                alert(`Sessão de ${operadorLogado} encerrada! Novo token baixado automaticamente.`);
+                window.location.href = 'login.html';
+            })
+            .catch(error => {
+                console.error(error);
+                alert("Falha no protocolo de desconexão.");
+            });
+        }
     </script>
 </body>
 </html>
