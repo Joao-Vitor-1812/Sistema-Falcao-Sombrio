@@ -42,6 +42,19 @@
         }
         .file-upload-btn:hover { background: var(--alert-color); color: #000; }
         #file-name-display { font-size: 0.7rem; color: #888; margin-top: 10px; display: block; }
+
+        /* Mensagem de bloqueio tático */
+        #msg-bloqueio {
+            color: var(--alert-color);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            border: 1px dashed var(--alert-color);
+            padding: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -49,32 +62,49 @@
     <div class="login-box">
         <h1>SECURUS DYNAMICS</h1>
         
-        <div id="login-section">
-            <p style="font-size: 0.8rem; color: #aaa;">IDENTIFICAÇÃO DE OPERADOR</p>
-            <input type="text" id="username" placeholder="LOGIN" autocomplete="off" required>
-            <input type="password" id="password" placeholder="SENHA" required>
-            <button onclick="verificarMFA()">Autenticar</button>
-            <p id="error-msg" style="color: var(--alert-color); font-size: 0.8rem; display: none;"></p>
-        </div>
-
-        <div id="mfa-section">
-            <div class="mfa-alert">
-                <strong>PROTOCOLO MFA EXIGIDO</strong><br>
-                Insira a Chave de Segurança USB
+        <form id="login-form" onsubmit="event.preventDefault();">
+            <div id="login-section">
+                <p style="font-size: 0.8rem; color: #aaa;">IDENTIFICAÇÃO DE OPERADOR</p>
+                <input type="text" id="username" placeholder="LOGIN" autocomplete="off" required>
+                <input type="password" id="password" placeholder="SENHA" required>
+                <button type="button" onclick="verificarMFA()">Autenticar</button>
+                <p id="error-msg" style="color: var(--alert-color); font-size: 0.8rem; display: none;"></p>
             </div>
-            
-            <label class="file-upload-btn">
-                SELECIONAR ARQUIVO CHAVE (.key)
-                <input type="file" id="hardware-key-file" accept=".key" onchange="lerArquivoKey()">
-            </label>
-            <span id="file-name-display">Nenhum hardware detectado.</span>
-            
-            <button onclick="enviarLoginMFA()" id="btn-finalizar" style="display:none; background: var(--alert-color);">Desbloquear Sistema</button>
-        </div>
+
+            <div id="mfa-section">
+                <div class="mfa-alert">
+                    <strong>PROTOCOLO MFA EXIGIDO</strong><br>
+                    Insira a Chave de Segurança USB
+                </div>
+                
+                <label class="file-upload-btn">
+                    SELECIONAR ARQUIVO CHAVE (.key)
+                    <input type="file" id="hardware-key-file" accept=".key" onchange="lerArquivoKey()">
+                </label>
+                <span id="file-name-display">Nenhum hardware detectado.</span>
+                
+                <button type="button" onclick="enviarLoginMFA()" id="btn-finalizar" style="display:none; background: var(--alert-color);">Desbloquear Sistema</button>
+                
+                <div id="msg-bloqueio">TERMINAL BLOQUEADO: Múltiplos Erros de Chave</div>
+            </div>
+        </form>
     </div>
 
     <script>
         let chaveLidaDoPendrive = null;
+        let loginTemporario = "";
+        let senhaTemporaria = "";
+
+        // Mantém a persistência do bloqueio caso a página seja atualizada
+        document.addEventListener("DOMContentLoaded", () => {
+            const errosSalvos = parseInt(sessionStorage.getItem('mfa_errors')) || 0;
+            if (errosSalvos >= 2) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('mfa-section').style.display = 'block';
+                document.getElementById('btn-finalizar').style.display = 'none';
+                document.getElementById('msg-bloqueio').style.display = 'block';
+            }
+        });
 
         function verificarMFA() {
             const user = document.getElementById('username').value.trim();
@@ -85,12 +115,14 @@
                 return;
             }
 
-            // Agora, não importa quem seja, esconde o login e exige o pendrive!
+            // Retém os dados do input em memória antes de mudar as abas visíveis
+            loginTemporario = user;
+            senhaTemporaria = pass;
+
             document.getElementById('login-section').style.display = 'none';
             document.getElementById('mfa-section').style.display = 'block';
         }
 
-        // Lê o conteúdo do arquivo 'securus_hardware_token.key' do pendrive
         function lerArquivoKey() {
             const fileInput = document.getElementById('hardware-key-file');
             const file = fileInput.files[0];
@@ -100,7 +132,7 @@
                 
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    chaveLidaDoPendrive = e.target.result; // Salva a assinatura lida
+                    chaveLidaDoPendrive = e.target.result.trim();
                     document.getElementById('btn-finalizar').style.display = 'block';
                     document.getElementById('file-name-display').style.color = "var(--accent-color)";
                     document.getElementById('file-name-display').innerText = "Assinatura Criptográfica Extraída com Sucesso.";
@@ -109,14 +141,19 @@
             }
         }
 
-        // Dispara tudo para o AuthController do Java
         async function enviarLoginMFA() {
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
+            let errosAtuais = parseInt(sessionStorage.getItem('mfa_errors')) || 0;
 
+            if (errosAtuais >= 2) {
+                document.getElementById('btn-finalizar').style.display = 'none';
+                document.getElementById('msg-bloqueio').style.display = 'block';
+                return;
+            }
+
+            // Garante o envio do payload estável contendo as credenciais retidas
             const payload = {
-                username: user,
-                password: pass,
+                username: loginTemporario,
+                password: senhaTemporaria,
                 hardwareKey: chaveLidaDoPendrive
             };
 
@@ -129,12 +166,25 @@
 
                 if (response.ok) {
                     const operadorLogado = await response.text();
+                    sessionStorage.removeItem('mfa_errors'); 
                     sessionStorage.setItem('operadorLogado', operadorLogado);
-                    window.location.href = 'index.html'; // Redireciona para o painel do drone
+                    window.location.href = 'index.html'; 
                 } else {
                     const errorText = await response.text();
-                    alert("FALHA CRÍTICA: " + errorText);
-                    window.location.reload(); // Reinicia a página em caso de falha de hardware
+                    errosAtuais++;
+                    sessionStorage.setItem('mfa_errors', errosAtuais);
+
+                    if (errosAtuais >= 2) {
+                        document.getElementById('btn-finalizar').style.display = 'none';
+                        document.getElementById('msg-bloqueio').style.display = 'block';
+                        alert("FALHA CRÍTICA: " + errorText + " Terminal bloqueado após 2 tentativas.");
+                    } else {
+                        alert(`MFA INVÁLIDO: Assinatura de hardware incorreta. (Tentativa ${errosAtuais} de 2)`);
+                        document.getElementById('hardware-key-file').value = "";
+                        document.getElementById('file-name-display').style.color = "#888";
+                        document.getElementById('file-name-display').innerText = "Insira um dispositivo de hardware válido.";
+                        document.getElementById('btn-finalizar').style.display = 'none';
+                    }
                 }
             } catch (err) {
                 alert("Erro de comunicação com o servidor.");

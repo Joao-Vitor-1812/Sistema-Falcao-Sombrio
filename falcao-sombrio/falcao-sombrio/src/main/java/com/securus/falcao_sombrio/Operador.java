@@ -21,7 +21,6 @@ public class Operador implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int idOperador;
-
     private String nome;
 
     @Column(unique = true, nullable = false)
@@ -29,43 +28,23 @@ public class Operador implements UserDetails {
 
     @Column(nullable = false)
     private String senha;
-
     private String nivelAcesso;
 
+    // A COLUNA DO PENDRIVE QUE ESTAVA FALTANDO
     @Column(name = "hardware_key")
     private String hardwareKey;
 
-    // --- MÉTODOS OBRIGATÓRIOS DO SPRING SECURITY (USERDETAILS) ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(this.nivelAcesso));
     }
 
-    @Override
-    public String getPassword() { return this.senha; }
-
-    @Override
-    public String getUsername() { return this.login; }
-
-    @Override
-    public boolean isAccountNonExpired() { return true; }
-    @Override
-    public boolean isAccountNonLocked() { return true; }
-    @Override
-    public boolean isCredentialsNonExpired() { return true; }
-    @Override
-    public boolean isEnabled() { return true; }
-
-    // --- MÉTODOS DE NEGÓCIO ORIGINAIS ---
-    public void acessarSistema() { 
-        System.out.println("Operador " + nome + " acessando o sistema...");
-    }
-
-    public void planejarMissao(Missao m) { 
-        if (m != null) {
-            System.out.println("Planejando missão: " + m.getObjetivos());
-        }
-    }
+    @Override public String getPassword() { return this.senha; }
+    @Override public String getUsername() { return this.login; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 
     // --- GETTERS E SETTERS COMPLETOS ---
     public int getIdOperador() { return idOperador; }
@@ -83,6 +62,7 @@ public class Operador implements UserDetails {
     public String getNivelAcesso() { return this.nivelAcesso; }
     public void setNivelAcesso(String nivelAcesso) { this.nivelAcesso = nivelAcesso; }
 
+    // O GETTER E SETTER DA CHAVE DO PENDRIVE
     public String getHardwareKey() { return this.hardwareKey; }
     public void setHardwareKey(String hardwareKey) { this.hardwareKey = hardwareKey; }
 }

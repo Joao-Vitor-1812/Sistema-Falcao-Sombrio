@@ -392,34 +392,46 @@
         }
 
         async function addLog(action, localSelecionado = "Não definido") {
-            const consoleBox = document.getElementById('log-console');
-            if (!consoleBox) return;
+        const consoleBox = document.getElementById('log-console');
+        if (!consoleBox) return;
 
-            const logData = {
-                acao: action,
-                dadosJson: JSON.stringify({
-                    id_operador: opLogado,
-                    id_frota: document.getElementById('frota-select').value || "NENHUMA",
-                    status: document.getElementById('sys-status').innerText,
-                    altitude: document.getElementById('alt-val').innerText,
-                    bateria: document.getElementById('bat-val').innerText,
-                    detalhes: localSelecionado
-                })
-            };
+        // Objeto com os dados internos do sistema (que já funciona)
+        const dadosInternos = {
+            id_operador: opLogado,
+            id_frota: document.getElementById('frota-select').value || "NENHUMA",
+            status: document.getElementById('sys-status').innerText,
+            altitude: document.getElementById('alt-val').innerText,
+            bateria: document.getElementById('bat-val').innerText,
+            detalhes: localSelecionado
+        };
 
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `<pre class="log-json">${JSON.stringify(logData, null, 2)}</pre>`;
-            consoleBox.prepend(entry);
+        // =========================================================================
+        // CORREÇÃO AQUI: Incluir o idOperador na RAIZ do JSON enviado ao Spring Boot
+        // =========================================================================
+        const logData = {
+            idOperador: opLogado,   // Mapeia para a propriedade Java camelCase
+            id_operador: opLogado,  // Mapeia caso use nomenclatura snake_case
+            acao: action,
+            dadosJson: JSON.stringify(dadosInternos)
+        };
 
-            try {
-                await fetch('/api/logs/gravar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(logData)
-                });
-            } catch (err) { console.error("Erro ao transmitir pacote de log:", err); }
+        // Atualiza o console visual do HTML
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<pre class="log-json">${JSON.stringify(logData, null, 2)}</pre>`;
+        consoleBox.prepend(entry);
+
+        // Transmite o payload completo para o Back-End
+        try {
+            await fetch('/api/logs/gravar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(logData) // Agora leva o idOperador junto!
+            });
+        } catch (err) {
+            console.error("Erro ao transmitir pacote de log:", err);
         }
+    }
 
         function atualizarIdDronePorFrota() {
             const selectFrota = document.getElementById('frota-select');
