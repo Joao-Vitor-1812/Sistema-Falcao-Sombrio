@@ -1,5 +1,12 @@
 package com.securus.falcao_sombrio;
 
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -9,12 +16,11 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "operador")
-public class Operador {
+public class Operador implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int idOperador;
-
     private String nome;
 
     @Column(unique = true, nullable = false)
@@ -22,19 +28,25 @@ public class Operador {
 
     @Column(nullable = false)
     private String senha;
+    private String nivelAcesso;
 
-    private int nivelAcesso;
+    // A COLUNA DO PENDRIVE QUE ESTAVA FALTANDO
+    @Column(name = "hardware_key")
+    private String hardwareKey;
 
-    // Métodos de negócio
-    public void acessarSistema() { 
-        System.out.println("Operador " + nome + " acessando o sistema...");
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(this.nivelAcesso));
     }
 
-    public void planejarMissao(Missao m) { 
-        System.out.println("Planejando missão: " + m.getObjetivos());
-    }
+    @Override public String getPassword() { return this.senha; }
+    @Override public String getUsername() { return this.login; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 
-    // Getters e Setters
+    // --- GETTERS E SETTERS COMPLETOS ---
     public int getIdOperador() { return idOperador; }
     public void setIdOperador(int idOperador) { this.idOperador = idOperador; }
 
@@ -47,6 +59,10 @@ public class Operador {
     public String getSenha() { return senha; }
     public void setSenha(String senha) { this.senha = senha; }
 
-    public int getNivelAcesso() { return nivelAcesso; }
-    public void setNivelAcesso(int nivelAcesso) { this.nivelAcesso = nivelAcesso; }
+    public String getNivelAcesso() { return this.nivelAcesso; }
+    public void setNivelAcesso(String nivelAcesso) { this.nivelAcesso = nivelAcesso; }
+
+    // O GETTER E SETTER DA CHAVE DO PENDRIVE
+    public String getHardwareKey() { return this.hardwareKey; }
+    public void setHardwareKey(String hardwareKey) { this.hardwareKey = hardwareKey; }
 }

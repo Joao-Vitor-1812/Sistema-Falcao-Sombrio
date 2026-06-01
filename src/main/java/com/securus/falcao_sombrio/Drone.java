@@ -1,5 +1,11 @@
 package com.securus.falcao_sombrio;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "drone")
@@ -13,8 +19,7 @@ public class Drone {
     private double longitude;
     private double altitude;
     
-    @Enumerated(EnumType.STRING)
-    private StatusDrone status;
+    private String status;
 
     @ManyToOne
     @JoinColumn(name = "fk_id_frota") 
@@ -45,8 +50,8 @@ public class Drone {
     public double getBateria() { return bateria; }
     public void setBateria(double bateria) { this.bateria = bateria; }
 
-    public StatusDrone getStatus() { return status; }
-    public void setStatus(StatusDrone status) { this.status = status; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public Frota getFrota() { return frota; }
     public void setFrota(Frota frota) { this.frota = frota; }
